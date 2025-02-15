@@ -47,10 +47,6 @@ Vue.component("product", {
             </button>
     
             <button @click="removeFromCart">Remove from cart</button>
-
-            <div class="cart">
-                <p>Cart ({{ cart }})</p>
-            </div>
         </div>
       </div>
     `,
@@ -63,7 +59,6 @@ Vue.component("product", {
             altText: "A pair of socks",
             onSale: true,
             inventory: 100,
-            cart: 0,
             sizes: ["S", "M", "L", "XL", "XXL", "XXXL"],
             details: ["80% cotton", "20% polyester", "Gender-neutral"],
 
@@ -85,13 +80,13 @@ Vue.component("product", {
     },
     methods: {
         addToCart() {
-            this.cart += 1;
+            this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId);
         },
+
         removeFromCart() {
-            if (this.cart > 0) {
-                this.cart -= 1;
-            }
+            this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId);
         },
+ 
         updateProduct(index) {
             this.selectedVariant = index;
             console.log(index);
@@ -105,7 +100,7 @@ Vue.component("product", {
             return this.variants[this.selectedVariant].variantImage;
         },
         inStock() {
-            return this.variants[this.selectedVariant].variantQuantity > 0;
+            return this.variants[this.selectedVariant].variantQuantity;
         },
 
         shipping() {
@@ -121,6 +116,15 @@ Vue.component("product", {
 let app = new Vue({
     el: "#app",
     data: {
-        premium: true
+        premium: true,
+        cart: [],
     },
+    methods: {
+       updateCart(id) {
+           this.cart.push(id);
+       }
+   }
 });
+
+
+
