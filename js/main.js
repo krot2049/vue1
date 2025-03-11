@@ -1,3 +1,5 @@
+let eventBus = new Vue() 
+
 Vue.component('product-review', {
     template: `
     <form class="review-form" @submit.prevent="onSubmit">
@@ -40,7 +42,6 @@ Vue.component('product-review', {
 </p>
 
 </form>`,
-
 data() {
     return {
         name: null,
@@ -50,33 +51,31 @@ data() {
         errors: []
     }
  },
-
-    methods:{
-        onSubmit() {
-            this.errors = [];
-            if(this.name && this.review && this.rating && this.recommend) {
-                let productReview = {
-                    name: this.name,
-                    review: this.review,
-                    rating: this.rating,
-                    recommend: this.recommend
-                }
-                this.$emit('review-submitted', productReview)
-                this.name = null
-                this.review = null
-                this.rating = null
-                this.recommend = null
-            } else {
-                if(!this.name) this.errors.push("Name required.")
-                if(!this.review) this.errors.push("Review required.")
-                if(!this.rating) this.errors.push("Rating required.")
-                if(!this.recommend) this.errors.push("Recommendation required.")
+methods: {
+    onSubmit() {
+        this.errors = [];
+        if(this.name && this.review && this.rating && this.recommend) {
+            let productReview = {
+                name: this.name,
+                review: this.review,
+                rating: this.rating,
+                recommend: this.recommend
             }
+            eventBus.$emit('review-submitted', productReview)
+            this.name = null
+            this.review = null
+            this.rating = null
+            this.recommend = null
+        } else {
+            if(!this.name) this.errors.push("Name required.")
+            if(!this.review) this.errors.push("Review required.")
+            if(!this.rating) this.errors.push("Rating required.")
+            if(!this.recommend) this.errors.push("Recommendation required.")
         }
     }
+}
 })
 
- 
 Vue.component("product-details", {
     props: {
         details: {
@@ -91,15 +90,59 @@ Vue.component("product-details", {
     `
 });
 
+Vue.component('product-tabs', {
+    props: {
+        reviews: {
+            type: Array,
+            required: false
+        }
+    },
+    template: `   
+       <div>   
+          <ul>
+            <span class="tab"
+                  :class="{ activeTab: selectedTab === tab }"
+                  v-for="(tab, index) in tabs"
+                  @click="selectedTab = tab"
+            >{{ tab }}</span>
+          </ul>
+          <div v-show="selectedTab === 'Reviews'">
+            <p v-if="!reviews.length">There are no reviews yet.</p>
+            <ul>
+              <li v-for="review in reviews" :key="review.name">
+                <p>{{ review.name }}</p>
+                <p>Rating: {{ review.rating }}</p>
+                <p>{{ review.review }}</p>
+                <p>Would you recommend this product? {{ review.recommend === 'yes' ? 'Yes' : 'No' }}</p>
+              </li>
+            </ul>
+          </div>
+          <div v-show="selectedTab === 'Make a Review'">
+            <product-review @review-submitted="addReview"></product-review>
+          </div>
+       </div>
+    `,
+    data() {
+        return {
+            tabs: ['Reviews', 'Make a Review'],
+            selectedTab: 'Reviews'
+        }
+    },
+    methods: {
+        addReview(productReview) {
+            this.$emit('review-submitted', productReview);
+        }
+    }
+});
+
+
 Vue.component("product", {
     props: {
         premium: {
             type: Boolean,
-            required: true,
-            reviews: []
+            required: true
         }
     },
-
     template: `
       <div class="product">
         <div class="product-image">
@@ -127,21 +170,10 @@ Vue.component("product", {
             </button>
 
             <button @click="removeFromCart">Remove from cart</button>
-            <product-review @review-submitted="addReview"></product-review>
-
-            <h2>Reviews</h2>
-            <p v-if="!reviews.length">There are no reviews yet.</p>
-            <ul>
-            <li v-for="review in reviews">
-                <p>{{ review.name }}</p>
-                <p>Rating: {{ review.rating }}</p>
-                <p>{{ review.review }}</p>
-                <p>Recommended: {{ review.recommend === 'yes' ? 'Yes' : 'No' }}</p>
-            </li>
-            </ul>
+    
+            <product-tabs :reviews="reviews" @review-submitted="addReview"></product-tabs>
         </div>
     </div>
-</div>
     `,
     data() {
         return {
@@ -155,7 +187,6 @@ Vue.component("product", {
             sizes: ["S", "M", "L", "XL", "XXL", "XXXL"],
             details: ["80% cotton", "20% polyester", "Gender-neutral"],
             reviews: [],
-
             variants: [
                 {
                     variantId: 2234,
@@ -172,23 +203,25 @@ Vue.component("product", {
             ]
         };
     },
+    mounted() {
+        eventBus.$on('review-submitted', productReview => {
+            this.reviews.push(productReview);
+        });
+    },
     methods: {
         addToCart() {
             this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId);
         },
-
         removeFromCart() {
             this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId);
         },
- 
         updateProduct(index) {
             this.selectedVariant = index;
             console.log(index);
         },
-
         addReview(productReview) {
-            this.reviews.push(productReview)
-         },
+            this.reviews.push(productReview);
+        }
     },
     computed: {
         title() {
@@ -200,12 +233,11 @@ Vue.component("product", {
         inStock() {
             return this.variants[this.selectedVariant].variantQuantity;
         },
-
         shipping() {
             if (this.premium) {
                 return "Free";
-            }else{
-                return 2.99
+            } else {
+                return 2.99;
             }
         }
     }
