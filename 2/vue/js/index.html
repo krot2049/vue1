@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title></title>
+  <link rel="stylesheet" href="../css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+</head>
+<body>
+<div id="app">
+        <h1>Приложение для заметок</h1>
+
+        <div class="form-container">
+            <div class="input-group">
+                <input type="text" v-model="newTitle" placeholder="Заголовок карточки" class="input">
+                <input type="text" v-model="newItems" placeholder="Пункты списка (через запятую)" class="input">
+            </div>
+            <div class="button-group">
+                <button @click="addCard" class="button add-button" :disabled="blockColumn1">Добавить в Столбец 1</button>
+                <button @click="reset" class="button reset-button">Сбросить</button>
+            </div>
+        </div>
+
+        <div class="columns">
+            <div class="column" v-for="col in columns" :key="col.id">
+                <h2>{{ col.name }}</h2>
+                <div class="card-container">
+                    <div class="card" v-for="card in col.cards" :key="card.id">
+                        <h3>{{ card.title }}</h3>
+                        <ul>
+                            <li v-for="item in card.items" :key="item.id">
+                                <label>
+                                    <input type="checkbox"
+                                           v-model="item.done"
+                                           @change="checkCard(card)"
+                                           :disabled="card.columnId === 1 && blockColumn1">
+                                    {{ item.text }}
+                                </label>
+                            </li>
+                        </ul>
+                        <p v-if="card.completedAt">Завершено: {{ card.completedAt }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
