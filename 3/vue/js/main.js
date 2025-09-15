@@ -148,3 +148,15 @@ Vue.component('task-card', {
                         task.status = now > deadline ? 'overdue' : 'completed';
                     }
                 },
+                returnTaskWithReason(reason) {
+                    const task = this.tasks.find(t => t.id === this.taskToReturnId);
+                    if (task) {
+                        task.columnId = 2;
+                        task.lastEdited = new Date().toISOString();
+                        task.returnReason = reason;
+                    }
+                    this.showReasonModal = false;
+                    this.taskToReturnId = null;
+                }
+            }
+        });
