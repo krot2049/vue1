@@ -97,3 +97,15 @@ Vue.component('task-card', {
                 currentTask: null,
                 taskToReturnId: null
             },
+            methods: {
+                getTasksInColumn(columnId) {
+                    return this.tasks.filter(task => task.columnId === columnId);
+                },
+                openCreateModal() {
+                    this.showCreateModal = true;
+                },
+                openEditModal(task) {
+                    this.currentTask = task;
+                    this.showEditModal = true;
+                },
+
