@@ -24,3 +24,37 @@ Vue.component('task-card', {
                 }
             }
         });
+
+        Vue.component('task-modal', {
+            props: ['title', 'buttonText', 'initialTask'],
+            data() {
+                return {
+                    task: this.initialTask ? { ...this.initialTask } : {
+                        title: '',
+                        description: '',
+                        deadline: ''
+                    }
+                };
+            },
+            template: `
+                <div class="modal" @click.self="$emit('close')">
+                    <div class="modal-content">
+                        <h3>{{ title }}</h3>
+                        <label>Заголовок: <input type="text" v-model="task.title"></label><br>
+                        <label>Описание: <textarea v-model="task.description"></textarea></label><br>
+                        <label>Дэдлайн: <input type="datetime-local" v-model="task.deadline"></label><br>
+                        <button @click="$emit('close')">Отмена</button>
+                        <button @click="saveTask">{{ buttonText }}</button>
+                    </div>
+                </div>
+            `,
+            methods: {
+                saveTask() {
+                    if (this.task.title.trim() === '') {
+                        alert('Заголовок не может быть пустым.');
+                        return;
+                    }
+                    this.$emit('save', this.task);
+                }
+            }
+        });

@@ -18,6 +18,23 @@
                 @create-task="openCreateModal"
             ></kanban-column>
         </div>
+
+        <task-modal
+            v-if="showCreateModal"
+            :title="'Создать задачу'"
+            :button-text="'Создать'"
+            @close="showCreateModal = false"
+            @save="createTask"
+        ></task-modal>
+
+        <task-modal
+            v-if="showEditModal"
+            :title="'Редактировать задачу'"
+            :button-text="'Сохранить'"
+            :initial-task="currentTask"
+            @close="showEditModal = false"
+            @save="editTask"
+        ></task-modal>
     </div>
     <script src="./main.js"></script>
 </head>
