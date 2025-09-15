@@ -108,4 +108,43 @@ Vue.component('task-card', {
                     this.currentTask = task;
                     this.showEditModal = true;
                 },
-
+                createTask(taskData) {
+                    const now = new Date().toISOString();
+                    const newTask = {
+                        id: Date.now(),
+                        columnId: 1,
+                        ...taskData,
+                        created: now,
+                        lastEdited: now
+                    };
+                    this.tasks.push(newTask);
+                },
+                editTask(taskData) {
+                    const index = this.tasks.findIndex(t => t.id === taskData.id);
+                    if (index !== -1) {
+                        this.tasks[index] = {
+                            ...this.tasks[index],
+                            ...taskData,
+                            lastEdited: new Date().toISOString()
+                        };
+                    }
+                },
+                deleteTask(taskId) {
+                    this.tasks = this.tasks.filter(task => task.id !== taskId);
+                },
+                moveTask({ taskId, fromColumn, toColumn }) {
+                    const task = this.tasks.find(t => t.id === taskId);
+                    if (!task) return;
+                    if (fromColumn === 3 && toColumn === 2) {
+                        this.taskToReturnId = taskId;
+                        this.showReasonModal = true;
+                        return;
+                    }
+                    task.lastEdited = new Date().toISOString();
+                    task.columnId = toColumn;
+                    if (toColumn === 4) {
+                        const now = new Date();
+                        const deadline = new Date(task.deadline);
+                        task.status = now > deadline ? 'overdue' : 'completed';
+                    }
+                },
