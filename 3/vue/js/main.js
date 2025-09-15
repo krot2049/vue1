@@ -25,6 +25,28 @@ Vue.component('task-card', {
             }
         });
 
+        Vue.component('kanban-column', {
+            props: ['title', 'tasks', 'columnId'],
+            template: `
+                <div class="column">
+                    <h3>{{ title }}</h3>
+                    <button v-if="columnId === 1" @click="$emit('create-task')">Создать задачу</button>
+                    <div class="task-list">
+                        <task-card
+                            v-for="task in tasks"
+                            :key="task.id"
+                            :task="task"
+                            :column-id="columnId"
+                            @edit="$emit('edit-task', task)"
+                            @delete="$emit('delete-task', $event)"
+                            @move="$emit('move-task', { taskId: $event, fromColumn: columnId, toColumn: columnId + 1 })"
+                            @return="$emit('move-task', { taskId: $event, fromColumn: columnId, toColumn: 2 })"
+                        ></task-card>
+                    </div>
+                </div>
+            `
+        });
+
         Vue.component('task-modal', {
             props: ['title', 'buttonText', 'initialTask'],
             data() {

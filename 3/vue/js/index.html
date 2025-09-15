@@ -1,40 +1,29 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
     <link rel="stylesheet" href="../css/style.css">
     <script src="./vue.js"></script>
-   <body>
+
+<body>
     <div id="app">
         <div class="container">
-            <kanban-column
-                v-for="column in columns"
-                :key="column.id"
-                :title="column.title"
-                :tasks="getTasksInColumn(column.id)"
-                :column-id="column.id"
-                @create-task="openCreateModal"
-            ></kanban-column>
+            <kanban-column v-for="column in columns" :key="column.id" :title="column.title"
+                :tasks="getTasksInColumn(column.id)" :column-id="column.id"
+                @create-task="openCreateModal"></kanban-column>
         </div>
 
-        <task-modal
-            v-if="showCreateModal"
-            :title="'Создать задачу'"
-            :button-text="'Создать'"
-            @close="showCreateModal = false"
-            @save="createTask"
-        ></task-modal>
+        <task-modal v-if="showCreateModal" :title="'Создать задачу'" :button-text="'Создать'"
+            @close="showCreateModal = false" @save="createTask"></task-modal>
 
-        <task-modal
-            v-if="showEditModal"
-            :title="'Редактировать задачу'"
-            :button-text="'Сохранить'"
-            :initial-task="currentTask"
-            @close="showEditModal = false"
-            @save="editTask"
-        ></task-modal>
+        <task-modal v-if="showEditModal" :title="'Редактировать задачу'" :button-text="'Сохранить'"
+            :initial-task="currentTask" @close="showEditModal = false" @save="editTask"></task-modal>
+
+        <reason-modal v-if="showReasonModal" :title="'Причина возврата'" :button-text="'Вернуть'"
+            @close="showReasonModal = false" @save="returnTaskWithReason"></reason-modal>
     </div>
     <script src="./main.js"></script>
-</head>
+    </head>
