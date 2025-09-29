@@ -9,21 +9,36 @@
     <script src="./vue.js"></script>
 
 <body>
-    <div id="app">
-        <div class="container">
-            <kanban-column v-for="column in columns" :key="column.id" :title="column.title"
-                :tasks="getTasksInColumn(column.id)" :column-id="column.id"
-                @create-task="openCreateModal"></kanban-column>
+   <div id="app">
+  <h1>Приложение для заметок</h1>
+
+  <div class="form-container">
+    <input type="text" v-model="newTitle" placeholder="Заголовок карточки" class="input">
+    <input type="text" v-model="newItems" placeholder="Пункты списка через запятую" class="input">
+    <button @click="addCard" :disabled="blockColumn1">Добавить в Столбец 1</button>
+    <button @click="reset">Сбросить</button>
+  </div>
+
+  <div class="columns">
+    <div class="column" v-for="col in columns" :key="col.id">
+      <h2>{{ col.name }}</h2>
+      <div class="card-container">
+        <div class="card" v-for="card in col.cards" :key="card.id">
+          <h3>{{ card.title }}</h3>
+          <ul>
+            <li v-for="item in card.items" :key="item.id">
+              <label>
+                <input type="checkbox" v-model="item.done" @change="toggleItem(card,item)"
+                       :disabled="card.columnId===1 && blockColumn1">
+                {{ item.text }}
+              </label>
+            </li>
+          </ul>
+          <p v-if="card.completedAt">Завершено: {{ card.completedAt }}</p>
         </div>
-
-        <task-modal v-if="showCreateModal" :title="'Создать задачу'" :button-text="'Создать'"
-            @close="showCreateModal = false" @save="createTask"></task-modal>
-
-        <task-modal v-if="showEditModal" :title="'Редактировать задачу'" :button-text="'Сохранить'"
-            :initial-task="currentTask" @close="showEditModal = false" @save="editTask"></task-modal>
-
-        <reason-modal v-if="showReasonModal" :title="'Причина возврата'" :button-text="'Вернуть'"
-            @close="showReasonModal = false" @save="returnTaskWithReason"></reason-modal>
+      </div>
     </div>
+  </div>
+</div>
     <script src="./main.js"></script>
-    </head>
+</head>

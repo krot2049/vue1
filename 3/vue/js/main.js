@@ -1,162 +1,110 @@
-Vue.component('task-card', {
-            props: ['task', 'columnId'],
-            template: `
-                <div class="task-card">
-                    <div><strong>{{ task.title }}</strong></div>
-                    <div v-if="task.description">Описание: {{ task.description }}</div>
-                    <div>Создано: {{ formatDate(task.created) }}</div>
-                    <div>Изменено: {{ formatDate(task.lastEdited) }}</div>
-                    <div v-if="task.deadline">Дэдлайн: {{ formatDate(task.deadline) }}</div>
-                    <div v-if="task.status">
-                        Статус: {{ task.status === 'completed' ? 'Выполнено' : 'Просрочено' }}
-                    </div>
-                    <div v-if="task.returnReason">Причина: {{ task.returnReason }}</div>
-                    <br>
-                    <button v-if="columnId === 1" @click="$emit('delete', task.id)">Удалить</button>
-                    <button @click="$emit('edit')">Редактировать</button>
-                    <button v-if="columnId !== 4" @click="$emit('move', task.id)">Переместить</button>
-                    <button v-if="columnId === 3" @click="$emit('return', task.id)">Вернуть</button>
-                </div>
-            `,
-            methods: {
-                formatDate(date) {
-                    return new Date(date).toLocaleString();
-                }
-            }
-        });
+const STORAGE_KEY = 'notesAppVue2';
 
-        Vue.component('kanban-column', {
-            props: ['title', 'tasks', 'columnId'],
-            template: `
-                <div class="column">
-                    <h3>{{ title }}</h3>
-                    <button v-if="columnId === 1" @click="$emit('create-task')">Создать задачу</button>
-                    <div class="task-list">
-                        <task-card
-                            v-for="task in tasks"
-                            :key="task.id"
-                            :task="task"
-                            :column-id="columnId"
-                            @edit="$emit('edit-task', task)"
-                            @delete="$emit('delete-task', $event)"
-                            @move="$emit('move-task', { taskId: $event, fromColumn: columnId, toColumn: columnId + 1 })"
-                            @return="$emit('move-task', { taskId: $event, fromColumn: columnId, toColumn: 2 })"
-                        ></task-card>
-                    </div>
-                </div>
-            `
-        });
+new Vue({
+  el: '#app',
+  data: {
+    columns: [
+      { id: 1, name: 'Столбец 1', limit: 3, cards: [] },
+      { id: 2, name: 'Столбец 2', limit: 5, cards: [] },
+      { id: 3, name: 'Столбец 3', limit: Infinity, cards: [] }
+    ],
+    newTitle: '',
+    newItems: '',
+    blockColumn1: false
+  },
+  created() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const s = JSON.parse(raw);
+        if (s.columns) this.columns = s.columns;
+        this.blockColumn1 = !!s.blockColumn1;
+      } catch (e) {}
+    }
+  },
+  methods: {
+    save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        columns: this.columns,
+        blockColumn1: this.blockColumn1
+      }));
+    },
+    genId(prefix = 'id') {
+      return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
+    },
+    addCard() {
+      if (this.blockColumn1) {
+        alert('Столбец 1 заблокирован');
+        return;
+      }
+      const col1 = this.columns[0];
+      if (col1.cards.length >= col1.limit) {
+        alert('Столбец 1 переполнен');
+        return;
+      }
+      const title = this.newTitle.trim();
+      if (!title) {
+        alert('Введите заголовок');
+        return;
+      }
+      const parts = this.newItems.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+      if (parts.length < 3 || parts.length > 5) {
+        alert('Нужно 3–5 пунктов');
+        return;
+      }
+      const card = {
+        id: this.genId('card'),
+        title,
+        items: parts.map(t => ({ id: this.genId('item'), text: t, done: false })),
+        columnId: 1,
+        completedAt: null
+      };
+      col1.cards.push(card);
+      this.newTitle = '';
+      this.newItems = '';
+      this.save();
+    },
+    toggleItem(card, item) {
+      if (card.columnId === 1 && this.blockColumn1) {
+        item.done = !item.done;
+        return;
+      }
+      this.$nextTick(() => {
+        const total = card.items.length;
+        const done = card.items.filter(i => i.done).length;
 
-        Vue.component('task-modal', {
-            props: ['title', 'buttonText', 'initialTask'],
-            data() {
-                return {
-                    task: this.initialTask ? { ...this.initialTask } : {
-                        title: '',
-                        description: '',
-                        deadline: ''
-                    }
-                };
-            },
-            template: `
-                <div class="modal" @click.self="$emit('close')">
-                    <div class="modal-content">
-                        <h3>{{ title }}</h3>
-                        <label>Заголовок: <input type="text" v-model="task.title"></label><br>
-                        <label>Описание: <textarea v-model="task.description"></textarea></label><br>
-                        <label>Дэдлайн: <input type="datetime-local" v-model="task.deadline"></label><br>
-                        <button @click="$emit('close')">Отмена</button>
-                        <button @click="saveTask">{{ buttonText }}</button>
-                    </div>
-                </div>
-            `,
-            methods: {
-                saveTask() {
-                    if (this.task.title.trim() === '') {
-                        alert('Заголовок не может быть пустым.');
-                        return;
-                    }
-                    this.$emit('save', this.task);
-                }
+        if (done === total) {
+          this.moveCard(card, 3);
+          card.completedAt = new Date().toLocaleString();
+          this.blockColumn1 = false;
+        } else if (done * 2 > total) {
+          if (card.columnId === 1) {
+            const col2 = this.columns.find(c => c.id === 2);
+            if (col2.cards.length >= col2.limit) {
+              this.blockColumn1 = true;
+            } else {
+              this.moveCard(card, 2);
             }
-        });
-
-        new Vue({
-            el: '#app',
-            data: {
-                columns: [
-                    { id: 1, title: 'Запланированные задачи' },
-                    { id: 2, title: 'Задачи в работе' },
-                    { id: 3, title: 'Тестирование' },
-                    { id: 4, title: 'Выполненные задачи' }
-                ],
-                tasks: [],
-                showCreateModal: false,
-                showEditModal: false,
-                showReasonModal: false,
-                currentTask: null,
-                taskToReturnId: null
-            },
-            methods: {
-                getTasksInColumn(columnId) {
-                    return this.tasks.filter(task => task.columnId === columnId);
-                },
-                openCreateModal() {
-                    this.showCreateModal = true;
-                },
-                openEditModal(task) {
-                    this.currentTask = task;
-                    this.showEditModal = true;
-                },
-                createTask(taskData) {
-                    const now = new Date().toISOString();
-                    const newTask = {
-                        id: Date.now(),
-                        columnId: 1,
-                        ...taskData,
-                        created: now,
-                        lastEdited: now
-                    };
-                    this.tasks.push(newTask);
-                },
-                editTask(taskData) {
-                    const index = this.tasks.findIndex(t => t.id === taskData.id);
-                    if (index !== -1) {
-                        this.tasks[index] = {
-                            ...this.tasks[index],
-                            ...taskData,
-                            lastEdited: new Date().toISOString()
-                        };
-                    }
-                },
-                deleteTask(taskId) {
-                    this.tasks = this.tasks.filter(task => task.id !== taskId);
-                },
-                moveTask({ taskId, fromColumn, toColumn }) {
-                    const task = this.tasks.find(t => t.id === taskId);
-                    if (!task) return;
-                    if (fromColumn === 3 && toColumn === 2) {
-                        this.taskToReturnId = taskId;
-                        this.showReasonModal = true;
-                        return;
-                    }
-                    task.lastEdited = new Date().toISOString();
-                    task.columnId = toColumn;
-                    if (toColumn === 4) {
-                        const now = new Date();
-                        const deadline = new Date(task.deadline);
-                        task.status = now > deadline ? 'overdue' : 'completed';
-                    }
-                },
-                returnTaskWithReason(reason) {
-                    const task = this.tasks.find(t => t.id === this.taskToReturnId);
-                    if (task) {
-                        task.columnId = 2;
-                        task.lastEdited = new Date().toISOString();
-                        task.returnReason = reason;
-                    }
-                    this.showReasonModal = false;
-                    this.taskToReturnId = null;
-                }
-            }
-        });
+          }
+        }
+        this.save();
+      });
+    },
+    moveCard(card, targetId) {
+      const src = this.columns.find(c => c.id === card.columnId);
+      const dst = this.columns.find(c => c.id === targetId);
+      if (!dst) return;
+      if (dst.cards.length >= dst.limit) return;
+      const idx = src.cards.findIndex(c => c.id === card.id);
+      if (idx !== -1) src.cards.splice(idx, 1);
+      card.columnId = targetId;
+      dst.cards.push(card);
+    },
+    reset() {
+      if (!confirm('Очистить всё?')) return;
+      this.columns.forEach(c => c.cards = []);
+      this.blockColumn1 = false;
+      this.save();
+    }
+  }
+});
